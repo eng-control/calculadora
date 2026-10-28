@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e;
+    --btn: #e5e5ea; --op: #ff9f0a; --op-text: #ffffff; --clr: #ff453a;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #000000; --card: #1c1c1e; --text: #f2f2f7; --btn: #3a3a3c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #000000; --card: #1c1c1e; --text: #f2f2f7; --btn: #3a3a3c;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; min-height: 100vh; display: flex;
+    align-items: center; justify-content: center;
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  }
+  .calc {
+    background: var(--card); padding: 16px; border-radius: 20px;
+    width: min(320px, 92vw); box-shadow: 0 8px 30px rgba(0,0,0,.15);
+  }
+  .visor {
+    height: 70px; display: flex; align-items: center; justify-content: flex-end;
+    font-size: 2rem; padding: 0 8px; overflow-x: auto; white-space: nowrap;
+  }
+  .grade { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  button {
+    font-size: 1.4rem; padding: 16px 0; border: none; border-radius: 14px;
+    background: var(--btn); color: var(--text); cursor: pointer;
+  }
+  button:active { filter: brightness(.85); }
+  .op { background: var(--op); color: var(--op-text); }
+  .limpar { background: var(--clr); color: #fff; grid-column: span 2; }
+  .apagar { grid-column: span 2; }
+</style>
+</head>
+<body>
+  <div class="calc">
+    <div class="visor" id="visor">0</div>
+    <div class="grade" id="grade"></div>
+  </div>
+
+<script>
+  // Guarda o que o usuário digitou (ex.: "12+5")
+  let expressao = "";
+  const visor = document.getElementById("visor");
+  const grade = document.getElementById("grade");
+
+  function atualizarVisor(texto) {
+    visor.textContent = texto === "" ? "0" : texto;
+  }
+
+  function clicar(valor) {
+    expressao += valor;
+    atualizarVisor(expressao);
+  }
+
+  function limpar() {
+    expressao = "";
+    atualizarVisor("");
+  }
+
+  function apagar() {
+    expressao = expressao.slice(0, -1);
+    atualizarVisor(expressao);
+  }
+
+  function calcular() {
+    if (expressao === "") return;
+    // Só deixa passar números e operadores
+    if (!/^[0-9+\-*/.() ]+$/.test(expressao)) {
+      expressao = ""; atualizarVisor("Erro"); return;
+    }
+    try {
+      const resultado = Function('"use strict"; return (' + expressao + ')')();
+      if (!isFinite(resultado)) {
+        expressao = ""; atualizarVisor("Div. por zero"); return;
+      }
+      expressao = String(parseFloat(resultado.toFixed(10)));
+      atualizarVisor(expressao);
+    } catch (e) {
+      expressao = ""; atualizarVisor("Erro");
+    }
+  }
+
+  // Cada botão: [texto, função, classe extra]
+  const botoes = [
+    ["C", limpar, "limpar"], ["⌫", apagar, "apagar"],
+    ["7"], ["8"], ["9"], ["/", null, "op"],
+    ["4"], ["5"], ["6"], ["*", null, "op"],
+    ["1"], ["2"], ["3"], ["-", null, "op"],
+    ["0"], ["."], ["=", calcular, "op"], ["+", null, "op"],
+  ];
+
+  for (const [texto, funcao, classe] of botoes) {
+    const b = document.createElement("button");
+    b.textContent = texto;
+    if (classe) b.className = classe;
+    b.onclick = funcao ? funcao : () => clicar(texto);
+    grade.appendChild(b);
+  }
+
+  // Teclado: números, operadores, Enter, Backspace e Esc
+  document.addEventListener("keydown", (e) => {
+    if ("0123456789+-*/.()".includes(e.key)) clicar(e.key);
+    else if (e.key === "Enter" || e.key === "=") calcular();
+    else if (e.key === "Backspace") apagar();
+    else if (e.key === "Escape") limpar();
+  });
+</script>
+</body>
+</html>
